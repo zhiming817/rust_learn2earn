@@ -1,37 +1,40 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+import { Container } from '@mui/material';
+import Navbar from './components/Navbar';
 import TaskList from './components/TaskList';
 import TaskForm from './components/TaskForm';
 import TaskEdit from './components/TaskEdit';
-import './App.css'
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#dc004e',
+    },
+  },
+});
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <Router>
-      <div className="App">
-        <nav className="navbar">
-          <h1>任务管理系统</h1>
-          <div className="nav-links">
-            <Link to="/">任务列表</Link>
-            <Link to="/create">创建任务</Link>
-          </div>
-        </nav>
-        
-        <main className="main-content">
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Router>
+        {/* <Navbar /> */}
+        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
           <Routes>
             <Route path="/" element={<TaskList />} />
             <Route path="/create" element={<TaskForm />} />
             <Route path="/edit/:id" element={<TaskEdit />} />
           </Routes>
-        </main>
-      </div>
-    </Router>
-  )
+        </Container>
+      </Router>
+    </ThemeProvider>
+  );
 }
 
-export default App
+export default App;
