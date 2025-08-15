@@ -119,4 +119,43 @@ impl TaskSubmissionService {
             Ok(None)
         }
     }
+
+    pub async fn approve_submission(
+        pool: &MySqlPool,
+        submission_id: i64,
+    ) -> Result<bool> {
+        let result = sqlx::query(
+            "UPDATE task_submission SET status = 'approved', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        )
+        .bind(submission_id)
+        .execute(pool)
+        .await?;
+
+        Ok(result.rows_affected() > 0)
+    }
+
+    pub async fn reject_submission(
+        pool: &MySqlPool,
+        submission_id: i64,
+        note: Option<String>,
+    ) -> Result<bool> {
+        let result = if let Some(note_text) = note {
+            sqlx::query(
+                "UPDATE task_submission SET status = 'rejected', note = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+            )
+            .bind(note_text)
+            .bind(submission_id)
+            .execute(pool)
+            .await?
+        } else {
+            sqlx::query(
+                "UPDATE task_submission SET status = 'rejected', updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+            )
+            .bind(submission_id)
+            .execute(pool)
+            .await?
+        };
+
+        Ok(result.rows_affected() > 0)
+    }
 }

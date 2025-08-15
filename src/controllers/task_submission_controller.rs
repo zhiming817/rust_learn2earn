@@ -1,6 +1,6 @@
 use actix_web::{web, HttpResponse, Result};
 use sqlx::MySqlPool;
-use crate::models::task_submission::TaskSubmissionQuery;
+use crate::models::task_submission::{TaskSubmissionQuery, RejectSubmissionRequest};
 use crate::services::task_submission_service::TaskSubmissionService;
 
 pub async fn get_submissions_by_task_id(
@@ -32,6 +32,50 @@ pub async fn get_submission_by_id(
     match TaskSubmissionService::get_submission_by_id(pool.get_ref(), id).await {
         Ok(Some(submission)) => Ok(HttpResponse::Ok().json(submission)),
         Ok(None) => Ok(HttpResponse::NotFound().json("Task submission not found")),
+        Err(e) => {
+            eprintln!("Database error: {}", e);
+            Ok(HttpResponse::InternalServerError().json("Database error"))
+        }
+    }
+}
+
+pub async fn approve_submission(
+    path: web::Path<i64>,
+    pool: web::Data<MySqlPool>
+) -> Result<HttpResponse> {
+    let submission_id = path.into_inner();
+    
+    match TaskSubmissionService::approve_submission(pool.get_ref(), submission_id).await {
+        Ok(true) => Ok(HttpResponse::Ok().json(serde_json::json!({
+            "message": "Submission approved successfully",
+            "status": "approved"
+        }))),
+        Ok(false) => Ok(HttpResponse::NotFound().json("Submission not found")),
+        Err(e) => {
+            eprintln!("Database error: {}", e);
+            Ok(HttpResponse::InternalServerError().json("Database error"))
+        }
+    }
+}
+
+pub async fn reject_submission(
+    path: web::Path<i64>,
+    request: web::Json<RejectSubmissionRequest>,
+    pool: web::Data<MySqlPool>
+) -> Result<HttpResponse> {
+    let submission_id = path.into_inner();
+    let reject_request = request.into_inner();
+    
+    match TaskSubmissionService::reject_submission(
+        pool.get_ref(), 
+        submission_id, 
+        reject_request.note
+    ).await {
+        Ok(true) => Ok(HttpResponse::Ok().json(serde_json::json!({
+            "message": "Submission rejected successfully",
+            "status": "rejected"
+        }))),
+        Ok(false) => Ok(HttpResponse::NotFound().json("Submission not found")),
         Err(e) => {
             eprintln!("Database error: {}", e);
             Ok(HttpResponse::InternalServerError().json("Database error"))

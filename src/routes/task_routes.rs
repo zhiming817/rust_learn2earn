@@ -18,5 +18,7 @@ pub fn configure_task_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
         web::scope("/api/submissions")
             .route("/{id}", web::get().to(task_submission_controller::get_submission_by_id))
+            .route("/{id}/approve", web::post().to(task_submission_controller::approve_submission))
+            .route("/{id}/reject", web::post().to(task_submission_controller::reject_submission))
     );
 }

@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
   Paper,
   Typography,
-  Button,
   Box,
   Alert,
   Chip,
@@ -13,7 +12,7 @@ import {
   MenuItem,
   Link,
   IconButton,
-  Tooltip
+  Snackbar
 } from '@mui/material';
 import {
   DataGrid,
@@ -22,9 +21,13 @@ import {
 import {
   ArrowBack as ArrowBackIcon,
   OpenInNew as OpenInNewIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  CheckCircle as CheckCircleIcon,
+  Cancel as CancelIcon
 } from '@mui/icons-material';
 import { taskSubmissionAPI } from '../services/api';
+import ApproveDialog from './dialogs/ApproveDialog';
+import RejectDialog from './dialogs/RejectDialog';
 
 const TaskSubmissions = () => {
   const { taskId } = useParams();
@@ -41,6 +44,15 @@ const TaskSubmissions = () => {
   });
   const [rowCount, setRowCount] = useState(0);
   const [statusFilter, setStatusFilter] = useState('');
+
+  // 对话框状态
+  const [approveDialog, setApproveDialog] = useState({ open: false, submission: null });
+  const [rejectDialog, setRejectDialog] = useState({ open: false, submission: null });
+  const [rejectNote, setRejectNote] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  
+  // 消息提示
+  const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
 
   const fetchSubmissions = useCallback(async (page = 0, pageSize = 10, status = '') => {
     try {
@@ -84,6 +96,93 @@ const TaskSubmissions = () => {
 
   const handleViewSubmission = (submissionId) => {
     navigate(`/submissions/${submissionId}`);
+  };
+
+  // 通过相关处理函数
+  const handleApproveClick = (submission) => {
+    setApproveDialog({ open: true, submission });
+  };
+
+  const handleApproveConfirm = async () => {
+    if (!approveDialog.submission) return;
+    
+    try {
+      setActionLoading(true);
+      await taskSubmissionAPI.approveSubmission(approveDialog.submission.id);
+      
+      setSnackbar({
+        open: true,
+        message: '提交已通过！',
+        severity: 'success'
+      });
+      
+      setApproveDialog({ open: false, submission: null });
+      
+      // 刷新列表
+      fetchSubmissions(paginationModel.page, paginationModel.pageSize, statusFilter);
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: '操作失败，请重试',
+        severity: 'error'
+      });
+      console.error('Error approving submission:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleApproveCancel = () => {
+    setApproveDialog({ open: false, submission: null });
+  };
+
+  // 拒绝相关处理函数
+  const handleRejectClick = (submission) => {
+    setRejectDialog({ open: true, submission });
+    setRejectNote('');
+  };
+
+  const handleRejectConfirm = async () => {
+    if (!rejectDialog.submission) return;
+    
+    try {
+      setActionLoading(true);
+      await taskSubmissionAPI.rejectSubmission(rejectDialog.submission.id, rejectNote);
+      
+      setSnackbar({
+        open: true,
+        message: '提交已拒绝！',
+        severity: 'success'
+      });
+      
+      setRejectDialog({ open: false, submission: null });
+      setRejectNote('');
+      
+      // 刷新列表
+      fetchSubmissions(paginationModel.page, paginationModel.pageSize, statusFilter);
+    } catch (err) {
+      setSnackbar({
+        open: true,
+        message: '操作失败，请重试',
+        severity: 'error'
+      });
+      console.error('Error rejecting submission:', err);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectCancel = () => {
+    setRejectDialog({ open: false, submission: null });
+    setRejectNote('');
+  };
+
+  const handleRejectNoteChange = (event) => {
+    setRejectNote(event.target.value);
+  };
+
+  const handleSnackbarClose = () => {
+    setSnackbar({ ...snackbar, open: false });
   };
 
   const getStatusColor = (status) => {
@@ -204,17 +303,39 @@ const TaskSubmissions = () => {
       field: 'actions',
       type: 'actions',
       headerName: '操作',
-      minWidth: 80,
-      flex: 0.5,
+      minWidth: 200,
+      flex: 1,
       sortable: false,
-      getActions: (params) => [
-        <GridActionsCellItem
-          icon={<VisibilityIcon />}
-          label="查看详情"
-          onClick={() => handleViewSubmission(params.id)}
-          color="primary"
-        />,
-      ],
+      getActions: (params) => {
+        const actions = [
+          <GridActionsCellItem
+            icon={<VisibilityIcon />}
+            label="查看详情"
+            onClick={() => handleViewSubmission(params.id)}
+            color="primary"
+          />,
+        ];
+
+        // 只有待审核状态才显示通过和拒绝按钮
+        if (params.row.status.toLowerCase() === 'pending') {
+          actions.push(
+            <GridActionsCellItem
+              icon={<CheckCircleIcon />}
+              label="通过"
+              onClick={() => handleApproveClick(params.row)}
+              color="success"
+            />,
+            <GridActionsCellItem
+              icon={<CancelIcon />}
+              label="拒绝"
+              onClick={() => handleRejectClick(params.row)}
+              color="error"
+            />
+          );
+        }
+
+        return actions;
+      },
     },
   ];
 
@@ -303,6 +424,40 @@ const TaskSubmissions = () => {
           }}
         />
       </Paper>
+
+      {/* 对话框组件 */}
+      <ApproveDialog
+        open={approveDialog.open}
+        submission={approveDialog.submission}
+        loading={actionLoading}
+        onConfirm={handleApproveConfirm}
+        onCancel={handleApproveCancel}
+      />
+
+      <RejectDialog
+        open={rejectDialog.open}
+        submission={rejectDialog.submission}
+        note={rejectNote}
+        loading={actionLoading}
+        onConfirm={handleRejectConfirm}
+        onCancel={handleRejectCancel}
+        onNoteChange={handleRejectNoteChange}
+      />
+
+      {/* 消息提示 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={handleSnackbarClose}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };

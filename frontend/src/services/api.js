@@ -46,6 +46,18 @@ export const taskSubmissionAPI = {
     return api.get(`/submissions/${submissionId}`);
   },
 
+  // 通过提交
+  approveSubmission: (submissionId) => {
+    return api.post(`/submissions/${submissionId}/approve`);
+  },
+
+  // 拒绝提交
+  rejectSubmission: (submissionId, note = '') => {
+    return api.post(`/submissions/${submissionId}/reject`, {
+      note: note || null
+    });
+  },
+
   // 创建新的提交
   createSubmission: (data) => {
     return api.post('/submissions', data);

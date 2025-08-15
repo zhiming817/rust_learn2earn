@@ -53,3 +53,8 @@ pub struct TaskSubmissionListResponse {
     pub data: Vec<TaskSubmission>,
     pub pagination: super::task::PaginationInfo,
 }
+
+#[derive(Deserialize)]
+pub struct RejectSubmissionRequest {
+    pub note: Option<String>,
+}
