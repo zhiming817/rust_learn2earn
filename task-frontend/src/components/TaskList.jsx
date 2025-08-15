@@ -76,15 +76,11 @@ const TaskList = () => {
   };
 
   const columns = [
-    // {
-    //   field: 'id',
-    //   headerName: 'ID',
-    //   width: 70,
-    // },
     {
       field: 'code',
       headerName: '任务',
-      width: 130,
+      minWidth: 120,
+      flex: 0.8,
       renderCell: (params) => (
         <Chip
           label={params.value}
@@ -97,13 +93,14 @@ const TaskList = () => {
     {
       field: 'name',
       headerName: '名称',
-      width: 150,
-      flex: 1,
+      minWidth: 150,
+      flex: 1.5,
     },
     {
       field: 'reward_cny',
       headerName: '人民币等值Token',
-      width: 160,
+      minWidth: 140,
+      flex: 1,
       renderCell: (params) => (
         <Chip
           label={`¥${params.value}`}
@@ -116,15 +113,29 @@ const TaskList = () => {
     {
       field: 'description',
       headerName: '说明',
-      width: 300,
+      minWidth: 200,
       flex: 2,
+      renderCell: (params) => (
+        <Box
+          sx={{
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+            width: '100%',
+          }}
+          title={params.value}
+        >
+          {params.value}
+        </Box>
+      ),
     },
-    
     {
       field: 'actions',
       type: 'actions',
       headerName: '操作',
-      width: 120,
+      minWidth: 100,
+      flex: 0.6,
+      sortable: false,
       getActions: (params) => [
         <GridActionsCellItem
           icon={<EditIcon />}
@@ -151,22 +162,33 @@ const TaskList = () => {
   }
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4" component="h1" gutterBottom>
+    <Box sx={{ width: '100%', height: '100%' }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mb: 3,
+        flexWrap: 'wrap',
+        gap: 2
+      }}>
+        {/* <Typography variant="h4" component="h1">
           任务列表
-        </Typography>
-        <Button
+        </Typography> */}
+        {/* <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => navigate('/create')}
           size="large"
         >
           创建新任务
-        </Button>
+        </Button> */}
       </Box>
 
-      <Paper sx={{ height: 600, width: '100%' }}>
+      <Paper sx={{ 
+        height: 'calc(100vh - 200px)', 
+        minHeight: 400,
+        width: '100%',
+      }}>
         <DataGrid
           rows={tasks}
           columns={columns}
@@ -189,10 +211,23 @@ const TaskList = () => {
           pageSizeOptions={[5, 10, 25]}
           checkboxSelection
           disableRowSelectionOnClick
+          autoHeight={false}
           sx={{
             '& .MuiDataGrid-cell:hover': {
               color: 'primary.main',
             },
+            '& .MuiDataGrid-main': {
+              overflow: 'hidden',
+            },
+            '& .MuiDataGrid-virtualScroller': {
+              overflow: 'auto',
+            },
+            // 响应式调整
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: 'grey.50',
+            },
+            width: '100%',
+            height: '100%',
           }}
         />
       </Paper>
@@ -203,6 +238,8 @@ const TaskList = () => {
         onClose={handleDeleteCancel}
         aria-labelledby="alert-dialog-title"
         aria-describedby="alert-dialog-description"
+        maxWidth="sm"
+        fullWidth
       >
         <DialogTitle id="alert-dialog-title">
           确认删除任务

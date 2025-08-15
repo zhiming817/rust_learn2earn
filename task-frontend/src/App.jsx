@@ -2,7 +2,7 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
-import { Container } from '@mui/material';
+import { Container, Box } from '@mui/material';
 import Navbar from './components/Navbar';
 import TaskList from './components/TaskList';
 import TaskForm from './components/TaskForm';
@@ -24,8 +24,17 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <Router>
-        {/* <Navbar /> */}
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        <Navbar />
+        <Container 
+          maxWidth="xl" 
+          sx={{ 
+            mt: 4, 
+            mb: 4,
+            px: { xs: 1, sm: 2, md: 3 },
+            width: '100%',
+            minHeight: 'calc(100vh - 200px)'
+          }}
+        >
           <Routes>
             <Route path="/" element={<TaskList />} />
             <Route path="/create" element={<TaskForm />} />
