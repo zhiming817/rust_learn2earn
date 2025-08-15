@@ -22,7 +22,8 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  DialogContentText
+  DialogContentText,
+  Link
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -30,7 +31,8 @@ import {
   Send as SendIcon,
   Refresh as RefreshIcon,
   CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon
+  Error as ErrorIcon,
+  OpenInNew as OpenInNewIcon
 } from '@mui/icons-material';
 import { 
   useCurrentAccount, 
@@ -90,6 +92,16 @@ const TransferPage = () => {
   );
 
   const walletBalance = balance ? Number(balance.totalBalance) / Number(MIST_PER_SUI) : 0;
+
+  // 获取区块链浏览器URL
+  const getExplorerUrl = (digest, network = 'devnet') => {
+    const baseUrls = {
+      mainnet: 'https://suiscan.xyz/mainnet',
+      testnet: 'https://suiscan.xyz/testnet', 
+      devnet: 'https://suiscan.xyz/devnet'
+    };
+    return `${baseUrls[network]}/tx/${digest}`;
+  };
 
   // 获取提交详情
   useEffect(() => {
@@ -364,7 +376,7 @@ const TransferPage = () => {
               <Alert severity="success" sx={{ mb: 2 }}>
                 钱包已连接
               </Alert>
-              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minWidth(200px, 1fr))', gap: 2 }}>
+              <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2 }}>
                 <Box>
                   <Typography variant="body2" color="text.secondary">钱包地址</Typography>
                   <Typography variant="body1" sx={{ fontFamily: 'monospace', fontSize: '0.9em' }}>
@@ -493,16 +505,38 @@ const TransferPage = () => {
             
             {transferResult.success ? (
               <Box>
-                <Typography variant="body2" color="text.secondary">交易哈希</Typography>
-                <Typography 
-                  variant="body1" 
-                  sx={{ fontFamily: 'monospace', fontSize: '0.9em', mb: 2, wordBreak: 'break-all' }}
-                >
-                  {transferResult.digest}
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  交易哈希
                 </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
+                  <Link
+                    href={getExplorerUrl(transferResult.digest)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    sx={{
+                      fontFamily: 'monospace',
+                      fontSize: '0.9em',
+                      textDecoration: 'none',
+                      color: 'primary.main',
+                      wordBreak: 'break-all',
+                      '&:hover': {
+                        textDecoration: 'underline'
+                      }
+                    }}
+                  >
+                    {transferResult.digest}
+                  </Link>
+                  <IconButton
+                    size="small"
+                    onClick={() => window.open(getExplorerUrl(transferResult.digest), '_blank')}
+                    sx={{ ml: 1 }}
+                  >
+                    <OpenInNewIcon fontSize="small" />
+                  </IconButton>
+                </Box>
                 <Typography variant="body2" color="text.secondary">详情</Typography>
                 <Typography variant="body1">
-                  向 {transferResult.recipient}发放奖励 {transferResult.amount} SUI
+                  向 {transferResult.recipient} 发放奖励 {transferResult.amount} SUI
                 </Typography>
               </Box>
             ) : (
