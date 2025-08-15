@@ -34,4 +34,27 @@ export const taskAPI = {
   deleteTask: (id) => api.delete(`/tasks/${id}`),
 };
 
+export const taskSubmissionAPI = {
+  // 根据任务ID获取提交记录
+  getSubmissionsByTaskId: (taskId, params = {}) => {
+    const queryString = new URLSearchParams(params).toString();
+    return api.get(`/tasks/${taskId}/submissions?${queryString}`);
+  },
+
+  // 根据提交ID获取提交详情
+  getSubmissionById: (submissionId) => {
+    return api.get(`/submissions/${submissionId}`);
+  },
+
+  // 创建新的提交
+  createSubmission: (data) => {
+    return api.post('/submissions', data);
+  },
+
+  // 更新提交状态
+  updateSubmission: (submissionId, data) => {
+    return api.put(`/submissions/${submissionId}`, data);
+  },
+};
+
 export default api;

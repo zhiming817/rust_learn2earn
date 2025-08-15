@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import TaskList from './components/TaskList';
 import TaskForm from './components/TaskForm';
 import TaskEdit from './components/TaskEdit';
+import TaskSubmissions from './components/TaskSubmissions';
 
 const theme = createTheme({
   palette: {
@@ -39,6 +40,7 @@ function App() {
             <Route path="/" element={<TaskList />} />
             <Route path="/create" element={<TaskForm />} />
             <Route path="/edit/:id" element={<TaskEdit />} />
+            <Route path="/tasks/:taskId/submissions" element={<TaskSubmissions />} />
           </Routes>
         </Container>
       </Router>

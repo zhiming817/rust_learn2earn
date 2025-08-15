@@ -25,7 +25,8 @@ import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Add as AddIcon,
-  Search as SearchIcon
+  Search as SearchIcon,
+  Assignment as AssignmentIcon
 } from '@mui/icons-material';
 import { taskAPI } from '../services/api';
 
@@ -81,6 +82,10 @@ const TaskList = () => {
 
   const handleEdit = (id) => {
     navigate(`/edit/${id}`);
+  };
+
+  const handleViewSubmissions = (taskId) => {
+    navigate(`/tasks/${taskId}/submissions`);
   };
 
   const handleDeleteClick = (task) => {
@@ -161,10 +166,16 @@ const TaskList = () => {
       field: 'actions',
       type: 'actions',
       headerName: '操作',
-      minWidth: 100,
-      flex: 0.6,
+      minWidth: 150,
+      flex: 0.8,
       sortable: false,
       getActions: (params) => [
+        <GridActionsCellItem
+          icon={<AssignmentIcon />}
+          label="查看PR"
+          onClick={() => handleViewSubmissions(params.id)}
+          color="info"
+        />,
         <GridActionsCellItem
           icon={<EditIcon />}
           label="编辑"
