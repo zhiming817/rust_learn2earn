@@ -1,7 +1,20 @@
 use actix_web::{web, HttpResponse, Result};
 use sqlx::MySqlPool;
-use crate::models::task::{CreateTaskRequest, UpdateTaskRequest};
+use crate::models::task::{CreateTaskRequest, UpdateTaskRequest, TaskQuery};
 use crate::services::task_service::TaskService;
+
+pub async fn get_tasks(
+    query: web::Query<TaskQuery>,
+    pool: web::Data<MySqlPool>
+) -> Result<HttpResponse> {
+    match TaskService::get_tasks_with_pagination(pool.get_ref(), query.into_inner()).await {
+        Ok(response) => Ok(HttpResponse::Ok().json(response)),
+        Err(e) => {
+            eprintln!("Database error: {}", e);
+            Ok(HttpResponse::InternalServerError().json("Database error"))
+        }
+    }
+}
 
 pub async fn get_all_tasks(pool: web::Data<MySqlPool>) -> Result<HttpResponse> {
     match TaskService::get_all_tasks(pool.get_ref()).await {

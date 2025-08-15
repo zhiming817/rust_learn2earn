@@ -1,11 +1,76 @@
 use sqlx::{MySqlPool, Row};
-use crate::models::task::{Task, CreateTaskRequest, UpdateTaskRequest};
+use crate::models::task::{Task, CreateTaskRequest, UpdateTaskRequest, TaskQuery, TaskListResponse, PaginationInfo};
 
 pub struct TaskService;
 
 impl TaskService {
+    pub async fn get_tasks_with_pagination(pool: &MySqlPool, query: TaskQuery) -> Result<TaskListResponse, sqlx::Error> {
+        let page = query.page();
+        let page_size = query.page_size();
+        let offset = query.offset();
+        
+        // 构建查询条件
+        let mut where_clause = String::new();
+        let mut count_where_clause = String::new();
+        let mut params = Vec::new();
+        
+        if let Some(search) = &query.search {
+            if !search.trim().is_empty() {
+                where_clause = " WHERE name LIKE ? OR code LIKE ? OR description LIKE ?".to_string();
+                count_where_clause = where_clause.clone();
+                let search_param = format!("%{}%", search.trim());
+                params = vec![search_param.clone(), search_param.clone(), search_param];
+            }
+        }
+        
+        // 获取总数
+        let count_query = format!("SELECT COUNT(*) as total FROM task{}", count_where_clause);
+        let mut count_sql = sqlx::query(&count_query);
+        for param in &params {
+            count_sql = count_sql.bind(param);
+        }
+        let count_row = count_sql.fetch_one(pool).await?;
+        let total: u32 = count_row.get::<i64, _>("total") as u32;
+        
+        // 获取分页数据
+        let data_query = format!(
+            "SELECT id, code, name, reward_cny, reward_token, description, created_at, updated_at FROM task{} ORDER BY created_at DESC LIMIT ? OFFSET ?", 
+            where_clause
+        );
+        let mut data_sql = sqlx::query(&data_query);
+        for param in &params {
+            data_sql = data_sql.bind(param);
+        }
+        data_sql = data_sql.bind(page_size).bind(offset);
+        
+        let rows = data_sql.fetch_all(pool).await?;
+        
+        let tasks: Vec<Task> = rows.into_iter().map(|row| Task {
+            id: row.get("id"),
+            code: row.get("code"),
+            name: row.get("name"),
+            reward_cny: row.get("reward_cny"),
+            reward_token: row.get("reward_token"),
+            description: row.get("description"),
+            created_at: row.get("created_at"),
+            updated_at: row.get("updated_at"),
+        }).collect();
+
+        let total_pages = (total + page_size - 1) / page_size;
+
+        Ok(TaskListResponse {
+            data: tasks,
+            pagination: PaginationInfo {
+                page,
+                page_size,
+                total,
+                total_pages,
+            },
+        })
+    }
+
     pub async fn get_all_tasks(pool: &MySqlPool) -> Result<Vec<Task>, sqlx::Error> {
-        let rows = sqlx::query("SELECT id, code, name, reward_cny, reward_token, description, created_at, updated_at FROM task")
+        let rows = sqlx::query("SELECT id, code, name, reward_cny, reward_token, description, created_at, updated_at FROM task ORDER BY created_at DESC")
             .fetch_all(pool)
             .await?;
 

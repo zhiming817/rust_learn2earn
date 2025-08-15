@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Paper,
@@ -7,13 +7,14 @@ import {
   Box,
   Alert,
   Chip,
-  IconButton,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   DialogContentText,
-  CircularProgress
+  CircularProgress,
+  TextField,
+  InputAdornment
 } from '@mui/material';
 import {
   DataGrid,
@@ -23,7 +24,8 @@ import {
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Add as AddIcon
+  Add as AddIcon,
+  Search as SearchIcon
 } from '@mui/icons-material';
 import { taskAPI } from '../services/api';
 
@@ -33,16 +35,26 @@ const TaskList = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, task: null });
+  
+  // 分页状态
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
+  const [rowCount, setRowCount] = useState(0);
+  const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    fetchTasks();
-  }, []);
-
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async (page = 0, pageSize = 10, searchTerm = '') => {
     try {
       setLoading(true);
-      const response = await taskAPI.getAllTasks();
-      setTasks(response.data);
+      const response = await taskAPI.getTasks({
+        page: page + 1, // 后端从1开始计数
+        page_size: pageSize,
+        search: searchTerm
+      });
+      
+      setTasks(response.data.data);
+      setRowCount(response.data.pagination.total);
       setError(null);
     } catch (err) {
       setError('获取任务列表失败');
@@ -50,6 +62,21 @@ const TaskList = () => {
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    fetchTasks(paginationModel.page, paginationModel.pageSize, search);
+  }, [paginationModel, search, fetchTasks]);
+
+  const handlePaginationChange = (newPaginationModel) => {
+    setPaginationModel(newPaginationModel);
+  };
+
+  const handleSearchChange = (event) => {
+    const newSearch = event.target.value;
+    setSearch(newSearch);
+    // 搜索时重置到第一页
+    setPaginationModel(prev => ({ ...prev, page: 0 }));
   };
 
   const handleEdit = (id) => {
@@ -63,8 +90,9 @@ const TaskList = () => {
   const handleDeleteConfirm = async () => {
     try {
       await taskAPI.deleteTask(deleteDialog.task.id);
-      setTasks(tasks.filter(task => task.id !== deleteDialog.task.id));
       setDeleteDialog({ open: false, task: null });
+      // 重新获取当前页数据
+      fetchTasks(paginationModel.page, paginationModel.pageSize, search);
     } catch (err) {
       setError('删除任务失败');
       console.error('Error deleting task:', err);
@@ -171,21 +199,39 @@ const TaskList = () => {
         flexWrap: 'wrap',
         gap: 2
       }}>
-        {/* <Typography variant="h4" component="h1">
+        <Typography variant="h4" component="h1">
           任务列表
-        </Typography> */}
-        {/* <Button
+        </Typography>
+        <Button
           variant="contained"
           startIcon={<AddIcon />}
           onClick={() => navigate('/create')}
           size="large"
         >
           创建新任务
-        </Button> */}
+        </Button>
+      </Box>
+
+      {/* 搜索框 */}
+      <Box sx={{ mb: 2 }}>
+        <TextField
+          fullWidth
+          placeholder="搜索任务名称、代码或描述..."
+          value={search}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          }}
+          sx={{ maxWidth: 400 }}
+        />
       </Box>
 
       <Paper sx={{ 
-        height: 'calc(100vh - 200px)', 
+        height: 'calc(100vh - 300px)', 
         minHeight: 400,
         width: '100%',
       }}>
@@ -193,22 +239,12 @@ const TaskList = () => {
           rows={tasks}
           columns={columns}
           loading={loading}
-          slots={{
-            toolbar: GridToolbar,
-            loadingOverlay: CircularProgress,
-          }}
-          slotProps={{
-            toolbar: {
-              showQuickFilter: true,
-              quickFilterProps: { debounceMs: 500 },
-            },
-          }}
-          initialState={{
-            pagination: {
-              paginationModel: { page: 0, pageSize: 10 },
-            },
-          }}
-          pageSizeOptions={[5, 10, 25]}
+          pagination
+          paginationMode="server"
+          paginationModel={paginationModel}
+          onPaginationModelChange={handlePaginationChange}
+          rowCount={rowCount}
+          pageSizeOptions={[5, 10, 25, 50]}
           checkboxSelection
           disableRowSelectionOnClick
           autoHeight={false}
@@ -222,7 +258,6 @@ const TaskList = () => {
             '& .MuiDataGrid-virtualScroller': {
               overflow: 'auto',
             },
-            // 响应式调整
             '& .MuiDataGrid-columnHeaders': {
               backgroundColor: 'grey.50',
             },
