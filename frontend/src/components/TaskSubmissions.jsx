@@ -23,7 +23,8 @@ import {
   OpenInNew as OpenInNewIcon,
   Visibility as VisibilityIcon,
   CheckCircle as CheckCircleIcon,
-  Cancel as CancelIcon
+  Cancel as CancelIcon,
+  AccountBalanceWallet as WalletIcon
 } from '@mui/icons-material';
 import { taskSubmissionAPI } from '../services/api';
 import ApproveDialog from './dialogs/ApproveDialog';
@@ -96,6 +97,10 @@ const TaskSubmissions = () => {
 
   const handleViewSubmission = (submissionId) => {
     navigate(`/submissions/${submissionId}`);
+  };
+
+  const handleTransferClick = (submission) => {
+    navigate(`/submissions/${submission.id}/transfer`);
   };
 
   // 通过相关处理函数
@@ -303,8 +308,8 @@ const TaskSubmissions = () => {
       field: 'actions',
       type: 'actions',
       headerName: '操作',
-      minWidth: 200,
-      flex: 1,
+      minWidth: 250,
+      flex: 1.2,
       sortable: false,
       getActions: (params) => {
         const actions = [
@@ -330,6 +335,18 @@ const TaskSubmissions = () => {
               label="拒绝"
               onClick={() => handleRejectClick(params.row)}
               color="error"
+            />
+          );
+        }
+
+        // 已通过的提交显示转账按钮
+        if (params.row.status.toLowerCase() === 'approved') {
+          actions.push(
+            <GridActionsCellItem
+              icon={<WalletIcon />}
+              label="转账"
+              onClick={() => handleTransferClick(params.row)}
+              color="info"
             />
           );
         }
