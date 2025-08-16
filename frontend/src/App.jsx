@@ -8,7 +8,13 @@ import '@mysten/dapp-kit/dist/index.css';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Container, Box } from '@mui/material';
+
+// 组件导入
+import { AuthProvider } from './contexts/AuthContext';
 import Navbar from './components/Navbar';
+import LoginPage from './components/LoginPage';
+import ProfilePage from './components/ProfilePage';
+import ProtectedRoute from './components/ProtectedRoute';
 import TaskList from './components/TaskList';
 import TaskForm from './components/TaskForm';
 import TaskEdit from './components/TaskEdit';
@@ -43,27 +49,63 @@ function App() {
         <WalletProvider autoConnect>
           <ThemeProvider theme={theme}>
             <CssBaseline />
-            <Router>
-              <Navbar />
-              <Container 
-                maxWidth="xl" 
-                sx={{ 
-                  mt: 4, 
-                  mb: 4,
-                  px: { xs: 1, sm: 2, md: 3 },
-                  width: '100%',
-                  minHeight: 'calc(100vh - 200px)'
-                }}
-              >
-                <Routes>
-                  <Route path="/" element={<TaskList />} />
-                  <Route path="/create" element={<TaskForm />} />
-                  <Route path="/edit/:id" element={<TaskEdit />} />
-                  <Route path="/tasks/:taskId/submissions" element={<TaskSubmissions />} />
-                  <Route path="/submissions/:submissionId/transfer" element={<TransferPage />} />
-                </Routes>
-              </Container>
-            </Router>
+            <AuthProvider>
+              <Router>
+                <Navbar />
+                <Container 
+                  maxWidth="xl" 
+                  sx={{ 
+                    mt: 4, 
+                    mb: 4,
+                    px: { xs: 1, sm: 2, md: 3 },
+                    width: '100%',
+                    minHeight: 'calc(100vh - 200px)'
+                  }}
+                >
+                  <Routes>
+                    {/* 公开路由 */}
+                    <Route path="/login" element={<LoginPage />} />
+                    
+                    {/* 受保护的路由 */}
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <TaskList />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/profile" element={
+                      <ProtectedRoute>
+                        <ProfilePage />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/create" element={
+                      <ProtectedRoute requiredPermission="task:create">
+                        <TaskForm />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/edit/:id" element={
+                      <ProtectedRoute requiredPermission="task:update">
+                        <TaskEdit />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/tasks/:taskId/submissions" element={
+                      <ProtectedRoute>
+                        <TaskSubmissions />
+                      </ProtectedRoute>
+                    } />
+                    
+                    <Route path="/submissions/:submissionId/transfer" element={
+                      <ProtectedRoute>
+                        <TransferPage />
+                      </ProtectedRoute>
+                    } />
+                  </Routes>
+                </Container>
+              </Router>
+            </AuthProvider>
           </ThemeProvider>
         </WalletProvider>
       </SuiClientProvider>

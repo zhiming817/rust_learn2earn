@@ -9,6 +9,56 @@ const api = axios.create({
   },
 });
 
+// 请求拦截器 - 添加token
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// 响应拦截器 - 处理401错误
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // Token过期，清除本地存储并重定向到登录页
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+    }
+    return Promise.reject(error);
+  }
+);
+
+// 认证相关API
+export const authAPI = {
+  // 用户登录
+  login: (credentials) => {
+    return axios.post(`${API_BASE_URL}/auth/login`, credentials, {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  },
+
+  // 获取用户信息
+  getProfile: () => api.get('/api/auth/profile'),
+
+  // 获取所有角色
+  getRoles: () => api.get('/api/auth/roles'),
+
+  // 获取所有权限
+  getPermissions: () => api.get('/api/auth/permissions'),
+
+  // 创建用户（管理员功能）
+  createUser: (userData) => api.post('/api/auth/admin/users', userData),
+};
+
 export const taskAPI = {
   // 获取分页任务列表
   getTasks: (params = {}) => {

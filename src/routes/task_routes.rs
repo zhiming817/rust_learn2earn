@@ -3,7 +3,7 @@ use crate::controllers::{task_controller, task_submission_controller};
 
 pub fn configure_task_routes(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("/api/tasks")
+        web::scope("/tasks")
             .route("", web::get().to(task_controller::get_tasks))  // 支持分页的新接口
             .route("/all", web::get().to(task_controller::get_all_tasks))  // 原来的获取所有接口
             .route("", web::post().to(task_controller::create_task))
@@ -16,7 +16,7 @@ pub fn configure_task_routes(cfg: &mut web::ServiceConfig) {
     
     // 单独的submissions路由
     cfg.service(
-        web::scope("/api/submissions")
+        web::scope("/submissions")
             .route("/{id}", web::get().to(task_submission_controller::get_submission_by_id))
             .route("/{id}/approve", web::post().to(task_submission_controller::approve_submission))
             .route("/{id}/reject", web::post().to(task_submission_controller::reject_submission))
